@@ -2,7 +2,5 @@ SAM_Reader is a Python module for working with many SAM/BAM formatted files. It 
 
 ## Quick Start
 
-$ import sam_reader
-$
-$ my_files = sam_reader(~/my_experiment/)  
-$ x = my_files.hits()
+*What is in each of the files?*
+![readerhits](/test_files/sam_reader.hits.png)
