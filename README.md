@@ -21,8 +21,8 @@ my_files.hits(write_file='~/new_file.csv')
 import sam_reader
 my_files = sam_reader('my_results_folder/')
 ```
- Def |  What it do
---|-----|--|--
+ Def |  What it does
+--|--
 reads(**) | Yields one read at a time, over all files. Each read is a [pysam](https://pysam.readthedocs.io/en/latest/index.html) Aligned Segment.  [Here](http://pysam.readthedocs.io/en/latest/api.html#pysam.AlignedSegment) is a list of things you can do with an Aligned Segment.
  hits(**)  | Creates a single 2d array (list of lists) from all files with the 5 columns:<br>File - Genome - Percent Coverage - Total Mapped Reads - Mapped Reads > 50 bp
  per_base_stats(**)| Creates a 2d array from the matches overlaying each position in a genome with the columns:<br>Position - Consensus - Percent - A - C - G - T - N - Gap<br>**You will need to specify a single organism if more than one is present in the files.*
@@ -31,7 +31,5 @@ reads(**) | Yields one read at a time, over all files. Each read is a [pysam](ht
   ** | Any method with ** can be modified by the following [key word arguments](https://docs.python.org/3/tutorial/controlflow.html#keyword-arguments):<br>organism='my_genome'<br>only_this_file='my_file.bam'<br>min_read_len=50
 
  
- 
-
-## I skim and only look at pictures
+## Here is a diagram of how most defs work.
 ![readerhits](/test_files/sam_reader.hits.png)
