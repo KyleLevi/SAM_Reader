@@ -1,6 +1,4 @@
-
-
-### This repo is still under construction. The code is working, but not totally bug free.
+# SAM_Reader
 
 SAM_Reader is a Python module for working with many SAM/BAM formatted files. It is built upon [pysam](https://pysam.readthedocs.io/en/latest/api.html) which is great if you are working with one SAM/BAM file. 
 
