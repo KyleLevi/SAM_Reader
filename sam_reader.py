@@ -11,8 +11,8 @@ class Sam_Reader:
         Initialize with the path to a file or a folder. If a file is
         :param file_or_folder:
         """
-        convert = kwargs.get('convert', True)
-        check_files = kwargs.get('check_files', True)
+        check_files = kwargs.get('check_files', False)
+        convert_files = kwargs.get('convert_files', False)
 
         # Generate a list of files in dir, and convert sam to bam
         if not os.path.isdir(file_or_folder):
@@ -25,15 +25,24 @@ class Sam_Reader:
             # Get the names of every SAM and BAM file in the input dir
             input_files = [file_or_folder + file_name for file_name in os.listdir(file_or_folder) if
                            file_name.endswith(".sam") or file_name.endswith('.bam')]
+
             # Trim sam files from the list that have a bam file of the same name in the list
             input_files = [file_name for file_name in input_files if not
             (file_name.endswith('.sam') and file_name.replace('.sam','.bam') in input_files)]
+
             # Convert any sam files to bam files, sort, index and add the new file names to the input_files
-            input_files = [file_name if file_name.endswith('.bam') else self.sam_to_bam(file_name) for file_name in input_files]
-        self.input_files = input_files
+            if convert_files and check_files:
+                input_files = [file_name if file_name.endswith('.bam') else self.sam_to_bam(file_name) for file_name in input_files]
+
+        #Finally, save the final list of input files after trimming and remove any .SAM files
+        self.input_files = [x for x in input_files if not x.endswith('.sam')]
 
         # Check if every BAM files has an index
-        #TODO
+        if check_files:
+            all_files = os.listdir(file_or_folder)
+            for f in self.input_files:
+                if f.relpace('.bam', '') + '.bai' not in all_files:
+                    self.index_bam(f)
 
         # Check if every file can be opened and record genomes & lengths
         genome_lengths = {}
@@ -60,10 +69,14 @@ class Sam_Reader:
 
     def remove_short_reads(self, new_dir = None, min_length = 50):
         """
+        #Probably will be absorbed into another def
+
         Reads in each bamfile and removes an reads less than min length and writes them to a new file
         :param min_length:
         :return:
         """
+        #TODO
+        pass
 
     @staticmethod
     def sam_to_bam(infile, outdir = None):
@@ -107,6 +120,34 @@ class Sam_Reader:
             return None
 
     @staticmethod
+    def index_bam(infile):
+        """
+        Only indexes a BAM file
+        :param infile: path to BAM file
+        :param outdir: (optional) path to write .bai file to
+        :return: path to new .bai file
+        """
+
+        if infile.lower().endswith('.sam'):
+            sys.stderr.write('index_bam() was called on a SAM file, use sam_to_bam() instead to convert AND index')
+            sys.exit(1)
+
+        if not infile.lower().endswith('.bam'):
+            sys.stdterr.write('index_bam() was called on a non-BAM file. If this file is actually a BAM file, consider naming it correctly.')
+            sys.exit(1)
+
+        # These are the commands to be run, edit them here!
+        index_bamfile  = ["samtools", "index", infile, infile.replace('.bam', '')]
+
+        sys.stdout.write('Converting {} to BAM file, sorting, and indexing...'.format(infile))
+        ret_code = subprocess.call(index_bamfile)
+        if ret_code != 0:
+            sys.stderr.write("Error running command \"{}\"\n".format(' '.join(index_bamfile)))
+            return None
+        return
+
+
+    @staticmethod
     def read_counts(bam_file_name, n=50):
 
         bamfile = pysam.AlignmentFile(bam_file_name, 'rb', check_sq=False)
@@ -123,6 +164,15 @@ class Sam_Reader:
         return stats_dict
 
     def quick_percent_coverages(self, bam_file_name, organism=None, MIN_POSITIONAL_COVERAGE=1):
+        """
+        Find the percent coverage of each organism in a single BAM file and returns a dictionary of
+        {organism1: 0.1, organism2: 50.0, ..}
+        :param bam_file_name: string
+        :param organism: if this is specified, only this organism will be considered
+        :param MIN_POSITIONAL_COVERAGE: does 1 read constitute coverage? if not, raise this number.
+        :return: dict {org1: %cov1, org2: %cov2, ... }
+        """
+
         bamfile = pysam.AlignmentFile(bam_file_name, 'rb', check_sq=False)
 
         # Loop over every read, and calculate coverage an organism if it's the first read found
@@ -167,7 +217,7 @@ class Sam_Reader:
 
         organism = kwargs.get('organism', None)
         only_this_file = kwargs.get('file_name', None)
-        min_read_len = kwargs.get('min_read_length', 50)
+        min_read_len = kwargs.get('min_read_len', 50)
         min_cov_depth = kwargs.get('min_coverage_depth', 1)
 
         header = ['file', 'genome', 'percent_coverage', 'total reads mapped', 'reads mapped > {} bp'.format(min_read_len)]
@@ -205,7 +255,7 @@ class Sam_Reader:
         kwargs['write_file'] = kwargs.get('write_file', False)
         organism = kwargs.get('organism', None)
         file_name = kwargs.get('file_name', None)
-        min_len = kwargs.get('min_len', 50)
+        min_len = kwargs.get('min_read_len', 50)
 
         if organism == None and len(self.genome_lengths.keys()) > 1:
             sys.stderr.write("Organism name not specified for per_base_stats and more than one organism is present,\n"
@@ -268,6 +318,7 @@ class Sam_Reader:
 
     def reads(self, **kwargs):
         """
+        Yields 1 read at a time across all files.
         For a full list of things to do with yielded reads:
         http://pysam.readthedocs.io/en/latest/api.html#pysam.AlignedSegment
         :param kwargs: organism, min_read_len, only_this_file
@@ -275,7 +326,7 @@ class Sam_Reader:
         """
         organism = kwargs.get('organism', None)
         only_this_file = kwargs.get('file_name', None)
-        min_read_len = kwargs.get('min_len', None)
+        min_read_len = kwargs.get('min_read_len', None)
         verb = kwargs.get('verbose', False)
 
         for bam_file_name in self.input_files:
@@ -291,13 +342,17 @@ class Sam_Reader:
                     continue
                 yield read
 
-    def write_reads(self, new_filename, **kwargs):
+    def cat(self, new_filename, **kwargs):
         organism = kwargs.get('organism', None)
         only_this_file = kwargs.get('file_name', None)
-        min_read_len = kwargs.get('min_len', None)
+        min_read_len = kwargs.get('min_read_len', None)
 
         out = pysam.Samfile(new_filename, 'w', template=pysam.AlignmentFile(self.input_files[0]))
-        for read in self.reads(min_len=30, organism=organism, only_this_file=only_this_file, verbose=True):
+        for read in self.reads(min_len=min_read_len_len, organism=organism, only_this_file=only_this_file, verbose=True):
+            if organism is not None and read.reference_name != organism:
+                continue
+            if min_read_len != None and read.infer_query_length() < min_read_len:
+                continue
             out.write(read)
 
         if not new_filename.endswith('.sam'):
