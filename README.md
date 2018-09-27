@@ -60,6 +60,9 @@ for read in my_files.reads(organism='NC001416.1):
     print(read.query_sequence())
 ```
 
+## Is there a quick way to...?
+Maybe. Open an issue [here](https://github.com/KyleLevi/SAM_Reader/issues). There are probably other people trying to do the same thing, so if it can be done quickly I will absolutely add that code to the docs.
+
 # Tiny Docs 
  The class is initialized by: 
 ```
