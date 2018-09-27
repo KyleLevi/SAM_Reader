@@ -1,19 +1,58 @@
 
+
 ### This repo is still under construction. The code is working, but not totally bug free.
 
 SAM_Reader is a Python module for working with many SAM/BAM formatted files. It is built upon [pysam](https://pysam.readthedocs.io/en/latest/api.html) which is great if you are working with one SAM/BAM file. 
 
-## Quick Start Cookbook
-**How many reads mapped to each organism across all files?**
+## Quick Start
+### Import and initialize:
 ```
 import sam_reader
-
 my_files = sam_reader('~/pathto/results/')
-my_files.hits(write_file='~/new_file.csv')
 ```
-**How many reads mapped to each organism from each file?**
-**How many reads mapped to each posistion in an organism?**
-**What does each base in the genome look like across all reads?**
+If you are opening SAM files in this directory, they can be automatically converted to BAM files, sorted, and indexed, if you do the following:
+```
+my_files = sam_reader('~/pathto/results/', check_files=True, convert_files=True)
+```
+
+
+### How many reads mapped to each organism in each file?
+```
+my_files.hits(write_file='new_file.csv')
+```
+This will loop over every file, and output a CSV file called "new_file.csv" that looks like:
+File  |  Genome  |  Percent Coverage  |  Total Mapped Reads  |  Mapped Reads > 50 bp
+--|--|--|--|--
+SRR3403834 | NC_001416.1 | 99.7 | 6078 | 6024
+SRR3403834 | JQ_00887.1 | 33.4 | 5146 | 0
+.. | .. | .. | .. | ..
+
+
+### How do I examine the matches at each individual position in the genome?
+```
+my_files.per_base_stats(write_file='new_file.csv', organism='my_organism')
+```
+If you do not specify ```organism=''``` AND there is more than 1 organism present in the files, then you will be shown a list of all organisms and asked to select one at runtime.
+
+
+### How do I split my files by organism, instead of by dataset?
+```
+for genome in my_files.genome_lengths.keys():
+    my_file.cat('only_' + genome, organism=genome)
+```
+additionally, you can add ```min_read_len=50``` to only consider matches longer than 50 base pairs.
+
+### I know a little bit of python, is there a way to loop over every read across all files?
+Yes! You can use .reads(), which yields one [pysam Aligned Segment object](https://pysam.readthedocs.io/en/latest/api.html#pysam.AlignedSegment) at a time.  The following example will loop over every read and print the [alignment length](https://pysam.readthedocs.io/en/latest/api.html#pysam.AlignedSegment.query_length) of each.
+```
+for read in my_files.reads()
+    print(read.query_alignment_length())
+```
+You can also choose to only loop over reads from a specific organism. In this example, only reads that aligned to "NC_001416.1" will have their [query sequence](https://pysam.readthedocs.io/en/latest/api.html#pysam.AlignedSegment.query_sequence) printed.
+```
+for read in my_files.reads(organism='NC001416.1):
+    print(read.query_sequence())
+```
 
 ## Tiny Docs 
  The class is initialized by: 
@@ -26,9 +65,9 @@ my_files = sam_reader('my_results_folder/')
 reads(**) | Yields one read at a time, over all files. Each read is a [pysam](https://pysam.readthedocs.io/en/latest/index.html) Aligned Segment.  [Here](http://pysam.readthedocs.io/en/latest/api.html#pysam.AlignedSegment) is a list of things you can do with an Aligned Segment.
  hits(**)  | Creates a single 2d array (list of lists) from all files with the 5 columns:<br>File - Genome - Percent Coverage - Total Mapped Reads - Mapped Reads > 50 bp
  per_base_stats(**)| Creates a 2d array from the matches overlaying each position in a genome with the columns:<br>Position - Consensus - Percent - A - C - G - T - N - Gap<br>**You will need to specify a single organism if more than one is present in the files.*
-  sam_to_bam(*s*)<br>*static method*| Makes system calls to [samtools](http://www.htslib.org/) to convert and index SAM files into the sam directory. **This will be performed automatically on any SAM files if they are opened with** ```sam_reader('my_folder/', check_files=True, convert_files=True)```
+  sam_to_bam(*s*)<br>*static method*| Makes system calls to [samtools](http://www.htslib.org/) to convert and index SAM files into the same directory. **This will be performed automatically on any SAM files if they are opened with** ```sam_reader('my_folder/', check_files=True, convert_files=True)```
   cat(**) | Concatenates reads from all BAM files into a single BAM file. **Kwargs can be used to specify a single organism, or enforce match length requirements**.
-  ** | Any method with ** can be modified by the following [key word arguments](https://docs.python.org/3/tutorial/controlflow.html#keyword-arguments):<br>organism='my_genome'<br>only_this_file='my_file.bam'<br>min_read_len=50
+  ****kwargs** | Any method with ** can be modified by the following [key word arguments](https://docs.python.org/3/tutorial/controlflow.html#keyword-arguments):<br>organism='my_genome'<br>only_this_file='my_file.bam'<br>min_read_len=50
 
  
 ## Here is a diagram of how most defs work.
