@@ -6,8 +6,8 @@ SAM_Reader is a Python module for working with many SAM/BAM formatted files. It 
 # Quick Start
 ## Import and initialize:
 ```
-import sam_reader
-my_files = sam_reader('~/pathto/results/')
+from sam_reader import Sam_Reader
+my_files = Sam_Reader('~/pathto/results/')
 ```
 If you are opening SAM files in this directory, they can be automatically converted to BAM files, sorted, and indexed, if you do the following:
 ```
