@@ -1,7 +1,14 @@
+"""
+VERSION = 0.1b1
+9/29/2018
+"""
+
+
 import sys
 import os
 import argparse
 import subprocess
+import operator
 import pysam
 
 class Sam_Reader:
@@ -41,7 +48,7 @@ class Sam_Reader:
         if check_files:
             all_files = os.listdir(file_or_folder)
             for f in self.input_files:
-                if f.relpace('.bam', '') + '.bai' not in all_files:
+                if f.replace('.bam', '') + '.bai' not in all_files:
                     self.index_bam(f)
 
         # Check if every file can be opened and record genomes & lengths
@@ -60,9 +67,16 @@ class Sam_Reader:
                 genome_lengths[r] = l
             if not check_files:
                 break
-        self.input_files = list(set(self.input_files)-set(removed_files))
+
+        removed_files = set(removed_files)
+        self.input_files = [x for x in input_files if x not in removed_files]
         self.broken_files = removed_files
         self.genome_lengths = genome_lengths
+
+        # Check to see if any files made it, if not, end and warn the user.
+        print(self.input_files)
+        if len(self.input_files) < 1:
+            sys.stderr.write('No input files made it past screening, if this is my fault, use Sam_Reader(\'my_files/\', check_files=False, convert_riles=False)')
 
     def __str__(self):
         return "{} BAM file(s): (use .input_files)\n{} Organism(s)/Genome_Length {}\n".format(len(self.input_files), len(self.genome_lengths.keys()), str(self.genome_lengths))
@@ -97,7 +111,7 @@ class Sam_Reader:
             # These are the commands to be run, edit them here!
             convert_to_bam = ["samtools", "view", "-bS", infile]
             sort_bamfile   = ["samtools", "sort", bamfile, bamfile.replace('.bam', '')]
-            index_bamfile  = ["samtools", "index", bamfile, bamfile.replace('.bam', '')]
+            index_bamfile  = ["samtools", "index", bamfile, bamfile.replace('.bam', '.bai')]
 
             sys.stdout.write('Converting {} to BAM file, sorting, and indexing...'.format(infile))
             ret_code = subprocess.call(convert_to_bam, stdout=open(bamfile, 'w'))
@@ -133,11 +147,11 @@ class Sam_Reader:
             sys.exit(1)
 
         if not infile.lower().endswith('.bam'):
-            sys.stdterr.write('index_bam() was called on a non-BAM file. If this file is actually a BAM file, consider naming it correctly.')
+            sys.stderr.write('index_bam() was called on a non-BAM file. If this file is actually a BAM file, consider naming it correctly.')
             sys.exit(1)
 
         # These are the commands to be run, edit them here!
-        index_bamfile  = ["samtools", "index", infile, infile.replace('.bam', '')]
+        index_bamfile  = ["samtools", "index", infile, infile.replace('.bam', '.bai')]
 
         sys.stdout.write('Converting {} to BAM file, sorting, and indexing...'.format(infile))
         ret_code = subprocess.call(index_bamfile)
@@ -247,6 +261,12 @@ class Sam_Reader:
 
     def per_base_stats(self, **kwargs):
         """
+        Creates a 2d array of every position in the genome, the columns are:
+        Position | Consensus | Percent | A | C | G | T | N | Gap
+        --|--|--|--|--|--|--|--|--
+        0 | A | 90.0 | 900 | 83 | 8 | 4 | 5 | 0
+        1 | C | 100 | 0 | 870 | 0 | 0 | 0 | 0
+        .. | .. | .. | .. | ..| .. | .. | .. | ..
 
         :param kwargs:
         :return:
@@ -258,11 +278,10 @@ class Sam_Reader:
         min_len = kwargs.get('min_read_len', 50)
 
         if organism == None and len(self.genome_lengths.keys()) > 1:
-            sys.stderr.write("Organism name not specified for per_base_stats and more than one organism is present,\n"
-                             "Available organism names are: {}".format(', '.join(self.genome_lengths.keys())))
-            organism = input("\n\nOrganism name not specified for .per_base_stats(organism=...) and more than one organism is present,\n"+
-                             "Enter the name of an organism to analyze. (available names listed above):\n")
-
+            sys.stderr.write("Available organism names are: {}".format(', '.join(self.genome_lengths.keys())))
+            # organism = input("\n\nOrganism name not specified for .per_base_stats(organism=...) and more than one organism is present,\n"+
+            #                  "Enter the name of an organism to analyze. (available names listed above):\n")
+            organism = 'NC_000000.1'
         else:
             organism = list(self.genome_lengths.keys())[0]
 
@@ -275,7 +294,7 @@ class Sam_Reader:
 
         # Initialize a list for every position in the genome, with an empty dictionary
         base_positions = [{"A": 0, "C": 0, "G": 0, "T": 0, "N": 0, "Gap": 0} for i in range(self.genome_lengths[organism])]
-        empty = True
+        is_empty = True
         # Loop over each file and add each base to the correct position in base_positions
         for f in self.input_files:
             try:
@@ -291,13 +310,13 @@ class Sam_Reader:
                         else:
                             bp = '-'
                         base_positions[p.reference_pos][bp] = base_positions[p.reference_pos].get(bp, 0) + 1
-                        empty = False
+                        is_empty = False
             except Exception as e:
                 sys.stderr.write('{}\nReading file: {} failed for Organism: {} -- skipping.\n'.format(e, file_name, organism))
                 continue
 
         if kwargs['write_file']:
-            if empty:
+            if is_empty:
                 print('\n\nempty')
             with open(kwargs['write_file'] + organism + '.csv', 'w') as outfile:
                 header = "\t".join(['Position', 'Consensus', 'Percent', 'A', 'C', 'G', 'T', 'N', 'Gap\n'])
@@ -348,7 +367,7 @@ class Sam_Reader:
         min_read_len = kwargs.get('min_read_len', None)
 
         out = pysam.Samfile(new_filename, 'w', template=pysam.AlignmentFile(self.input_files[0]))
-        for read in self.reads(min_len=min_read_len_len, organism=organism, only_this_file=only_this_file, verbose=True):
+        for read in self.reads(min_len=min_read_len, organism=organism, only_this_file=only_this_file, verbose=True):
             if organism is not None and read.reference_name != organism:
                 continue
             if min_read_len != None and read.infer_query_length() < min_read_len:
@@ -377,6 +396,76 @@ class Sam_Reader:
         if ret_code != 0:
             sys.stderr.write("Error running command \"{}\"\n".format(' '.join(index_bamfile)))
             return None
+
+
+    def primers(self, primer_len, **kwargs):
+        """
+        First: Creates a pileup of the whole genome using every BAM file, using .per_base_stats()
+        Second: Calculates the rolling_scores (multiplied, not averaged) conservation of each bas in a window of size 'len'
+        Third: Returns the most conserved
+        :param kwargs: primer_len=int, organism=string, min_read_len=int
+        :return:
+        """
+        organism = kwargs.get('organism', None)
+        only_this_file = kwargs.get('file_name', None)
+        min_read_len = kwargs.get('min_read_len', None)
+        write_file = kwargs.get('write_file', None)
+
+        # PBS is a 2d array with the columns
+        # Position | Consensus | Percent | A | C | G | T | N | Gap
+
+        pbs = []
+
+        for index, pos_dict in enumerate(self.per_base_stats(**kwargs)):
+            consensus = max(pos_dict, key=pos_dict.get)
+            try:
+                percent = float(pos_dict[consensus]) / sum(list(pos_dict.values()))
+            except:
+                percent = 0.0
+            line = [index, consensus, round(percent * 100, 2), pos_dict['A'], pos_dict['C'], pos_dict['G'],
+                    pos_dict['T'], pos_dict['N'], pos_dict['Gap']]
+            line = [str(x) for x in line]
+            line[-1] = line[-1] + '\n'
+            pbs.append(line)
+
+        def score_array(my_list):
+            """
+            This internal def will only be used to score each primer length based on conservation
+            :param my_list: a list of ints
+            :return: an int
+            """
+            if len(my_list) < 1:
+                return 0
+
+            my_list = [float(x) for x in my_list]
+            i = 1.0
+            for j in my_list:
+                i = i * j
+            return i
+
+        # part 2, calculate scores for all primers starting at [0 -> end-primer_len]
+        conservations = [x[2] for x in pbs]
+        rolling_scores = []
+        for i in range(len(pbs) - primer_len):
+            rolling_scores.append((i, score_array(conservations[i:i+primer_len])))
+
+        rolling_scores.sort(key=operator.itemgetter(1))
+
+        output = []
+        # format FASTA output two lines at a time
+        for i in range(100):
+            score_tup = rolling_scores[i]
+            least_cons_base = min([x[1] for x in pbs[score_tup[0] : score_tup[0] + primer_len]])
+            seq = ''.join([pbs[score_tup[0]+j][1] for j in range(0,primer_len)])
+            output.append('>start_position_{} [score={}][GC_content={}][least_conserved_base={}]'.format(score_tup[0], score_tup[1], seq.count('G') + seq.count('C'), least_cons_base))
+            output.append(seq)
+
+        if write_file:
+            with open(write_file, 'r') as outfile:
+                for line in output:
+                    outfile.write(line + '\n')
+
+        return output
 
 
 
