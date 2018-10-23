@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='sam_reader',
-    version='0.1b1',
+    version='0.1b2',
     python_version='3+',
     author='Kyle Levi',
     description='A package for reading many SAM/BAM files at once using Pysam',
