@@ -84,9 +84,14 @@ reads(**) | Yields one read at a time, over all files. Each read is a [pysam](ht
  hits(**)  | Creates a single 2d array (list of lists) from all files with the 5 columns:<br>File - Genome - Percent Coverage - Total Mapped Reads - Mapped Reads > 50 bp
  per_base_stats(**) | Creates a 2d array from the matches overlaying each position in a genome with the columns:<br>Position - Consensus - Percent - A - C - G - T - N - Gap<br>**You will need to specify a single organism if more than one is present in the files.*
   sam_to_bam(*s*)<br>*static method*| Makes system calls to [samtools](http://www.htslib.org/) to convert and index SAM files into the same directory. **This will be performed automatically on any SAM files if they are opened with** ```Sam_Reader('my_folder/', check_files=True, convert_files=True)```
+primers(**) | Takes in a single int (your desired primer length) and returns the top 100 most conserved sequences of that length in FASTA format. Conservation of a primer is calculated by *multiplying* the conservation of each individual position in the potential primer.   
   cat(**) | Concatenates reads from all BAM files into a single BAM file. **Kwargs can be used to specify a single organism, or enforce match length requirements**.
   ****kwargs** | Any method with ** can be modified by the following [key word arguments](https://docs.python.org/3/tutorial/controlflow.html#keyword-arguments):<br>organism='my_genome'<br>only_this_file='my_file.bam'<br>min_read_len=50
 
  
 ## Here is a diagram of how most defs work.
 ![readerhits](/test_files/sam_reader.hits.png)
+
+# FAQ
+### What do you mean by "Mapped Reads > 50 bp"?
+When using .stats(), this column represents the number of matches that aligned more than 50 base pairs. This is to help distinguish strong matches from short matches.
