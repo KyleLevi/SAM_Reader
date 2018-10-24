@@ -1,17 +1,25 @@
 
 # SAM_Reader
 
-SAM_Reader is a Python module for working with many SAM/BAM formatted files. It is built upon [pysam](https://pysam.readthedocs.io/en/latest/api.html) which is great if you are working with one SAM/BAM file. 
+SAM_Reader is a Python package for working with many SAM/BAM formatted files at once. It is built upon [pysam](https://pysam.readthedocs.io/en/latest/api.html) which is great if you are working with a single SAM/BAM file. 
 
 # Quick Start
-## Import and initialize:
+## Install sam_reader with pip
+Open your favorite terminal with pip and type:
+```
+pip3 install --user sam_reader
+```
+
+
+
+## Import sam_reader and initialize Sam_Reader:
 ```
 from sam_reader import Sam_Reader
 my_files = Sam_Reader('~/pathto/results/')
 ```
 If you are opening SAM files in this directory, they can be automatically converted to BAM files, sorted, and indexed, if you do the following:
 ```
-my_files = sam_reader('~/pathto/results/', check_files=True, convert_files=True)
+my_files = Sam_Reader('~/pathto/results/', check_files=True, convert_files=True)
 ```
 
 
@@ -63,18 +71,19 @@ for read in my_files.reads(organism='NC001416.1):
 ## Is there a quick way to...?
 Maybe. Open an issue [here](https://github.com/KyleLevi/SAM_Reader/issues). There are probably other people trying to do the same thing, so if it can be done quickly I will absolutely add that code to the docs.
 
+
 # Tiny Docs 
  The class is initialized by: 
 ```
-import sam_reader
-my_files = sam_reader('my_results_folder/')
+from sam_reader import Sam_Reader
+my_files = Sam_Reader'my_results_folder/')
 ```
  Def |  What it does
 --|--
 reads(**) | Yields one read at a time, over all files. Each read is a [pysam](https://pysam.readthedocs.io/en/latest/index.html) Aligned Segment.  [Here](http://pysam.readthedocs.io/en/latest/api.html#pysam.AlignedSegment) is a list of things you can do with an Aligned Segment.
  hits(**)  | Creates a single 2d array (list of lists) from all files with the 5 columns:<br>File - Genome - Percent Coverage - Total Mapped Reads - Mapped Reads > 50 bp
  per_base_stats(**) | Creates a 2d array from the matches overlaying each position in a genome with the columns:<br>Position - Consensus - Percent - A - C - G - T - N - Gap<br>**You will need to specify a single organism if more than one is present in the files.*
-  sam_to_bam(*s*)<br>*static method*| Makes system calls to [samtools](http://www.htslib.org/) to convert and index SAM files into the same directory. **This will be performed automatically on any SAM files if they are opened with** ```sam_reader('my_folder/', check_files=True, convert_files=True)```
+  sam_to_bam(*s*)<br>*static method*| Makes system calls to [samtools](http://www.htslib.org/) to convert and index SAM files into the same directory. **This will be performed automatically on any SAM files if they are opened with** ```Sam_Reader('my_folder/', check_files=True, convert_files=True)```
   cat(**) | Concatenates reads from all BAM files into a single BAM file. **Kwargs can be used to specify a single organism, or enforce match length requirements**.
   ****kwargs** | Any method with ** can be modified by the following [key word arguments](https://docs.python.org/3/tutorial/controlflow.html#keyword-arguments):<br>organism='my_genome'<br>only_this_file='my_file.bam'<br>min_read_len=50
 
