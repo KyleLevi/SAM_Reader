@@ -7,4 +7,4 @@ setup(name='sam_reader',
     description='A package for reading many SAM/BAM files at once using Pysam',
     author_email='pip@kylelevi.com',
     install_requires=['pysam'],
-    url='https://github.com/KyleLevi/SAM_Reader')
+    url='https://github.com/KyleLevi/SAM_Reader ')

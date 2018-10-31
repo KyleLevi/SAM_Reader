@@ -11,7 +11,7 @@ import subprocess
 import operator
 import pysam
 
-class Sam_Reader:
+class SamReader:
 
     def __init__(self, file_or_folder, **kwargs):
         """
@@ -484,7 +484,7 @@ if __name__ == '__main__':
         parser.print_help()
         sys.exit(1)
 
-    data = Sam_Reader(args.input)
+    data = SamReader(args.input)
     if not args.output:
         args.outpt=None
 
