@@ -12,16 +12,22 @@ pip3 install --user sam_reader
 
 
 
-## Import sam_reader and initialize Sam_Reader:
+## Import sam_reader and initialize SamReader:
 ```
-from sam_reader import Sam_Reader
-my_files = Sam_Reader('~/pathto/results/')
+from sam_reader import SamReader
+my_files = SamReader('pathto/results/')
 ```
 If you are opening SAM files in this directory, they can be automatically converted to BAM files, sorted, and indexed, if you do the following:
 ```
-my_files = Sam_Reader('~/pathto/results/', check_files=True, convert_files=True)
+my_files = SamReader('pathto/results/', check_files=True, convert_files=True)
 ```
 
+If you are in the directory with all the files, you can use `.`, like this:
+```
+my_files = SamReader('.')
+```
+
+Note: the path should be a relative path from where you are, or an absolute path like `/home/kyle`. 
 
 ## How many reads mapped to each organism in each file?
 ```
@@ -75,15 +81,15 @@ Maybe. Open an issue [here](https://github.com/KyleLevi/SAM_Reader/issues). Ther
 # Tiny Docs 
  The class is initialized by: 
 ```
-from sam_reader import Sam_Reader
-my_files = Sam_Reader'my_results_folder/')
+from sam_reader import SamReader
+my_files = SamReader'my_results_folder/')
 ```
  Def |  What it does
 --|--
 reads(**) | Yields one read at a time, over all files. Each read is a [pysam](https://pysam.readthedocs.io/en/latest/index.html) Aligned Segment.  [Here](http://pysam.readthedocs.io/en/latest/api.html#pysam.AlignedSegment) is a list of things you can do with an Aligned Segment.
  hits(**)  | Creates a single 2d array (list of lists) from all files with the 5 columns:<br>File - Genome - Percent Coverage - Total Mapped Reads - Mapped Reads > 50 bp
  per_base_stats(**) | Creates a 2d array from the matches overlaying each position in a genome with the columns:<br>Position - Consensus - Percent - A - C - G - T - N - Gap<br>**You will need to specify a single organism if more than one is present in the files.*
-  sam_to_bam(*s*)<br>*static method*| Makes system calls to [samtools](http://www.htslib.org/) to convert and index SAM files into the same directory. **This will be performed automatically on any SAM files if they are opened with** ```Sam_Reader('my_folder/', check_files=True, convert_files=True)```
+  sam_to_bam(*s*)<br>*static method*| Makes system calls to [samtools](http://www.htslib.org/) to convert and index SAM files into the same directory. **This will be performed automatically on any SAM files if they are opened with** ```SamReader('my_folder/', check_files=True, convert_files=True)```
 primers(**) | Takes in a single int (your desired primer length) and returns the top 100 most conserved sequences of that length in FASTA format. Conservation of a primer is calculated by *multiplying* the conservation of each individual position in the potential primer.   
   cat(**) | Concatenates reads from all BAM files into a single BAM file. **Kwargs can be used to specify a single organism, or enforce match length requirements**.
   ****kwargs** | Any method with ** can be modified by the following [key word arguments](https://docs.python.org/3/tutorial/controlflow.html#keyword-arguments):<br>organism='my_genome'<br>only_this_file='my_file.bam'<br>min_read_len=50
