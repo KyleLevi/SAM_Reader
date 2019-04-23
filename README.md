@@ -15,13 +15,19 @@ pip3 install --user sam_reader
 ## Import sam_reader and initialize SamReader:
 ```
 from sam_reader import SamReader
-my_files = SamReader('~/pathto/results/')
+my_files = SamReader('pathto/results/')
 ```
 If you are opening SAM files in this directory, they can be automatically converted to BAM files, sorted, and indexed, if you do the following:
 ```
-my_files = SamReader('~/pathto/results/', check_files=True, convert_files=True)
+my_files = SamReader('pathto/results/', check_files=True, convert_files=True)
 ```
 
+If you are in the directory with all the files, you can use `.`, like this:
+```
+my_files = SamReader('.')
+```
+
+Note: the path should be a relative path from where you are, or an absolute path like `/home/kyle`. 
 
 ## How many reads mapped to each organism in each file?
 ```
