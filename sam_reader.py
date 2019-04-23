@@ -76,7 +76,7 @@ class SamReader:
         # Check to see if any files made it, if not, end and warn the user.
         print(self.input_files)
         if len(self.input_files) < 1:
-            sys.stderr.write('No input files made it past screening, if this is my fault, use Sam_Reader(\'my_files/\', check_files=False, convert_riles=False)')
+            sys.stderr.write('No input files made it past screening, if this is my fault, use Sam_Reader(\'my_files/\', check_files=False, convert_files=False)')
 
     def __str__(self):
         return "{} BAM file(s): (use .input_files)\n{} Organism(s)/Genome_Length {}\n".format(len(self.input_files), len(self.genome_lengths.keys()), str(self.genome_lengths))
